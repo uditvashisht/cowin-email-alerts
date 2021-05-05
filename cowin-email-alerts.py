@@ -6,6 +6,9 @@ from decouple import config
 import smtplib
 from email.message import EmailMessage
 import time
+import os
+import logging
+
 
 # Either insert your emails and password here or use python-decouple or follow this article https://saralgyaan.com/posts/set-passwords-and-secret-keys-in-environment-variables-maclinuxwindows-python-quicktip/
 
@@ -14,9 +17,9 @@ TO_EMAIL = config('TO_EMAIL')
 PASSWORD = config('PASSWORD')
 
 # Just Change these values
-no_of_days = 7    # Change this to 7,14,21 or 28
-pincodes = ['141001']  # Add as many pincodes as you want separated by commas
-min_age_limit = 45  # Change this to 18 if you want 18+
+no_of_days = 28   # Change this to 7,14,21 or 28
+pincodes = ['141001', '141002']  # Add as many pincodes as you want separated by commas
+min_age_limit = 18  # Change this to 18 if you want 18+
 
 BASE_DATE = datetime.datetime.now()
 DATE_LIST = date_list = [BASE_DATE + datetime.timedelta(days=x * 7) for x in range(int(no_of_days / 7))]
@@ -25,6 +28,15 @@ dates = [date.strftime("%d-%m-%Y") for date in date_list]
 
 # Start the API
 cowin = CoWinAPI()
+
+# Logging stuff
+MY_PATH = os.getcwd()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+file_handler = logging.FileHandler(f'{os.path.join(MY_PATH, "cowin_email_alerts.log")}')
+fmt = logging.Formatter('%(levelname)s : %(name)s : %(asctime)s : %(message)s')
+file_handler.setFormatter(fmt)
+logger.addHandler(file_handler)
 
 
 def send_email(text_file: str):
@@ -125,6 +137,8 @@ def main():
         final_df.set_index('date', inplace=True)
         final_df.to_csv(r'availability.txt', sep=' ', mode='a')
         send_email('availability.txt')
+    else:
+        logger.info(f'There is no slot available for age {str(min_age_limit)} and above for pincode(s) {" ".join(pincodes)}')
 
 
 if __name__ == '__main__':
